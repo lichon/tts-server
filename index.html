@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f0f2f5;
+        }
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        #chatBox {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background-color: white;
+        }
+        .message {
+            max-width: 70%;
+            margin: 10px 0;
+        }
+        .user {
+            background-color: #4CAF50;
+            color: white;
+            align-self: flex-end;
+            border-radius: 20px 20px 0 20px;
+        }
+        .ai {
+            background-color: #e0e0e0;
+            color: black;
+            align-self: flex-start;
+            border-radius: 20px 20px 20px 0;
+        }
+        .message p {
+            padding: 10px 15px;
+            border-radius: 15px;
+            word-wrap: break-word;
+        }
+        #inputContainer {
+            display: flex;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-top: 1px solid #ddd;
+        }
+        #userInput {
+            width: 80%;
+            height: 40px;
+            padding: 10px;
+            margin-right: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            resize: none;
+        }
+        #sendButton {
+            flex: 1;
+            height: 100%;
+            padding: 10px;
+            margin-right: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #sendButton:hover {
+            background-color: #45a049;
+        }
+        #pipButton {
+            flex: 1;
+            width: 24px;
+            height: 100%;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div id="chatBox"></div>
+        <div id="inputContainer">
+            <input type="text" id="userInput" autocomplete="off">
+            <button id="sendButton">发送</button>
+            <button id="pipButton">pip</button>
+        </div>
+    </div>
+
+    <script>
+        const chatBox = document.getElementById('chatBox');
+        const userInput = document.getElementById('userInput');
+        const sendButton = document.getElementById('sendButton');
+
+        sendButton.addEventListener('click', sendMessage);
+        userInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+        pipButton.addEventListener('click', pipWindow);
+
+        function sendMessage() {
+            const message = userInput.value.trim();
+            if (!message) return;
+
+            //addMessage('user', message);
+            userInput.value = '';
+            userInput.focus();
+
+            ttsRequest(message);
+            // setTimeout(() => {
+            //     const aiResponse = generateAIResponse(message);
+            //     addMessage('ai', aiResponse);
+            // }, 1000);
+        }
+
+        function addMessage(type, text) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${type}`;
+            msgDiv.innerHTML = `<p>${text}</p>`;
+            chatBox.appendChild(msgDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function generateAIResponse(input) {
+            const responses = [
+                "hello world",
+            ];
+            return responses[Math.floor(Math.random() * responses.length)];
+        }
+
+        async function pipWindow() {
+            const pipWindow = await documentPictureInPicture.requestWindow();
+            const tmpInput = document.createElement('input')
+            // Set attributes for the input element (optional)
+            tmpInput.setAttribute('type', 'text');
+
+            // Set styles for the input element
+            tmpInput.style.width = '100%';
+            tmpInput.style.fontSize = '24px';
+            tmpInput.style.border = '0px';
+            tmpInput.style.outline = 'none'
+
+            tmpInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const message = tmpInput.value.trim();
+                    if (!message) return;
+
+                    tmpInput.value = '';
+                    tmpInput.focus();
+                    ttsRequest(message);
+                }
+            });
+            // Move the player to the Picture-in-Picture window.
+            pipWindow.document.body.append(tmpInput);
+        }
+
+        async function ttsRequest(input) {
+            const params = new URLSearchParams({
+                txt: input
+            });
+            const apiUrl = `/tts?${params}`;
+            try {
+                const response = await fetch(apiUrl);
+                const data = await response.json();
+                return data.reply;
+            } catch (error) {
+                return "抱歉，我暂时无法理解您的问题。";
+            }
+        }
+    </script>
+</body>
+</html>
