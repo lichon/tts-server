@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 
 app = FastAPI()
-tts_service = tts.LocalTTSService(use_ai=True)
+tts_service = tts.LocalTTSService(use_ai=True, audio_device='steam')
 
 @app.get("/", response_class=HTMLResponse)
 def index():

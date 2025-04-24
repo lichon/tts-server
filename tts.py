@@ -29,7 +29,9 @@ def main():
             tts_service.speak(current_content)
         time.sleep(0.5)
 
-def get_mpv_audio_device():
+def get_mpv_audio_device(audio_device='auto'):
+    if audio_device == 'auto':
+        return audio_device
     ret = 'auto'
     device_list = subprocess.run([
         'mpv',
@@ -51,7 +53,9 @@ def mpv_play(f, device = 'auto'):
         '--volume=150', f
     ])
 
-def get_pyaudio_device():
+def get_pyaudio_device(audio_device='auto'):
+    if audio_device == 'auto':
+        return None
     p = pyaudio.PyAudio()
     ret = None
     for i in range(p.get_device_count()):
@@ -62,39 +66,22 @@ def get_pyaudio_device():
             break
     return ret
 
-def pyaudio_play(seg, device = None):
-    p = pyaudio.PyAudio()
-    stream = p.open(format=p.get_format_from_width(seg.sample_width),
-                    channels=seg.channels,
-                    rate=seg.frame_rate,
-                    output_device_index=device,
-                    output=True)
-
-    # Just in case there were any exceptions/interrupts, we release the resource
-    # So as not to raise OSError: Device Unavailable should play() be used again
-    try:
-        for chunk in make_chunks(seg, 500):
-            stream.write(chunk._data)
-    finally:
-        stream.stop_stream()
-        stream.close()
-        p.terminate()
-
 class LocalTTSService:
-    def __init__(self, use_ai=False):
-        self.audio_device = 'auto'
+    def __init__(self, use_ai=False, audio_device='auto'):
+        self.audio_device = audio_device
+        self.use_ai = use_ai
         self.engine = pyttsx3.init()
         if use_ai:
             try:
                 import ai_tts_engine
                 self.engine.proxy._module = ai_tts_engine
                 self.engine.proxy._driver = ai_tts_engine.TTSDriver(self.engine.proxy)
-                self.engine.setProperty('device', get_pyaudio_device())
+                self.engine.setProperty('device', get_pyaudio_device(audio_device))
             except ImportError:
                 print("ai_tts_engine not found, using pyttsx3 instead")
-                self.audio_device = get_mpv_audio_device()
+                self.audio_device = get_mpv_audio_device(audio_device)
         else:
-            self.audio_device = get_mpv_audio_device()
+            self.audio_device = get_mpv_audio_device(audio_device)
         # setup microsoft voice
         voices = self.engine.getProperty('voices')
         if isinstance(voices, list):
@@ -108,7 +95,7 @@ class LocalTTSService:
     def speak(self, text):
         if not text:
             return
-        if self.audio_device == 'auto':
+        if self.use_ai or self.audio_device == 'auto':
             self.engine.say(text)
             self.engine.runAndWait()
         else:
