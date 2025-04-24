@@ -88,7 +88,7 @@ class LocalTTSService:
             try:
                 import ai_tts_engine
                 self.engine.proxy._module = ai_tts_engine
-                self.engine.proxy._driver = ai_tts_engine.TTSDriver(engine.proxy)
+                self.engine.proxy._driver = ai_tts_engine.TTSDriver(self.engine.proxy)
                 self.engine.setProperty('device', get_pyaudio_device())
             except ImportError:
                 print("ai_tts_engine not found, using pyttsx3 instead")
