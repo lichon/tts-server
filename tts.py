@@ -3,10 +3,11 @@ import time
 import pyperclip
 import pyttsx4
 import os
+import tempfile
 
 def main():
     tts_service = LocalTTSService()
-    last_content = ""
+    last_content = ''
     while True:
         current_content = pyperclip.paste()
         if current_content != last_content:
@@ -14,28 +15,38 @@ def main():
             tts_service.to_file(current_content)
         time.sleep(0.5)
 
-def mpv_play(f):
+def get_audio_device():
+    ret = 'auto'
+    device_list = subprocess.run([
+        'mpv',
+        '--audio-device=help',
+    ], capture_output=True).stdout
+    for device in device_list.splitlines():
+        print(device)
+        if b'Steam Streaming Speakers' in device:
+            ret = device.decode('utf-8').strip().split(' ')[0].strip("'")
+            print("selected device:", ret)
+            break
+    return ret
+
+def mpv_play(f, device = 'auto'):
     subprocess.run([
-        "mpv",
-        # "--audio-device=wasapi/{a8b47dd6-3226-48db-9b72-862860a13f42}", 
-        "--no-terminal",
-        "--force-window=no",
-        "--volume=150", f
+        'mpv',
+        '--audio-device=' + device,
+        '--no-terminal',
+        '--force-window=no',
+        '--volume=150', f
     ])
 
 class LocalTTSService:
-    _file_idx = 1
-
     def __init__(self):
-        self.engine = pyttsx4.init('coqui_ai_tts')
-        self.voices = self.engine.getProperty('voices')
-        for v in self.voices:
-            print("v", v)
-        self.engine.setProperty('voice', 0)
+        self.audio_device = get_audio_device()
+        self.engine = pyttsx4.init()
+        voices = self.engine.getProperty('voices')
+        if isinstance(voices, list):
+            for v in voices:
+                print('v', v)
         self.engine.setProperty('rate', 150)
-
-    def set_voice(self):
-        self.engine.setProperty('voice', 0)
 
     def speak(self, text):
         self.engine.say(text)
@@ -43,14 +54,18 @@ class LocalTTSService:
 
     def speak_to_file(self, text):
         if not text:
-            raise ValueError("Text cannot be empty")
-        LocalTTSService._file_idx += 1
-        filename = 'tmp_' + str(LocalTTSService._file_idx) + '.wav'
-        self.engine.save_to_file(text, filename)
-        self.engine.runAndWait()
-        mpv_play(filename)
-        os.remove(filename)
+            raise ValueError('Text cannot be empty')
 
-if __name__ == "__main__":
-    print("start monitoring clipboard")
+        # Create temp file with .wav extension
+        tmp_file = tempfile.NamedTemporaryFile(suffix='.wav')
+        tmp_file.close()
+        saved_file = tmp_file.name
+
+        self.engine.save_to_file(text, saved_file)
+        self.engine.runAndWait()
+        mpv_play(saved_file, self.audio_device)
+        os.remove(saved_file)
+
+if __name__ == '__main__':
+    print('start monitoring clipboard')
     main()
