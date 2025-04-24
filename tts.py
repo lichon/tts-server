@@ -80,23 +80,21 @@ def pyaudio_play(seg, device = None):
         stream.close()
         p.terminate()
 
-def _load_ai_engine(engine):
-    try:
-        import ai_tts_engine
-        engine.proxy._module = ai_tts_engine
-        engine.proxy._driver = ai_tts_engine.TTSDriver(engine.proxy)
-        engine.setProperty('device', get_pyaudio_device())
-    except ImportError:
-        print("ai_tts_engine not found, using pyttsx3 instead")
-
 class LocalTTSService:
-    def __init__(self, use_ai=False, device='auto'):
+    def __init__(self, use_ai=False):
         self.audio_device = 'auto'
         self.engine = pyttsx3.init()
         if use_ai:
-            _load_ai_engine(self.engine)
+            try:
+                import ai_tts_engine
+                self.engine.proxy._module = ai_tts_engine
+                self.engine.proxy._driver = ai_tts_engine.TTSDriver(engine.proxy)
+                self.engine.setProperty('device', get_pyaudio_device())
+            except ImportError:
+                print("ai_tts_engine not found, using pyttsx3 instead")
+                self.audio_device = get_mpv_audio_device()
         else:
-            self.audio_device = device
+            self.audio_device = get_mpv_audio_device()
         # setup microsoft voice
         voices = self.engine.getProperty('voices')
         if isinstance(voices, list):
