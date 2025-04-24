@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 
 app = FastAPI()
-tts_service = tts.LocalTTSService()
+tts_service = tts.LocalTTSService(use_ai=True)
 
 @app.get("/", response_class=HTMLResponse)
 def index():
@@ -13,7 +13,7 @@ def index():
 
 @app.get("/tts")
 def tts(txt: str):
-    tts_service.speak_to_file(txt)
+    tts_service.speak(txt)
     return "OK"
 
 @app.head("/tts")
