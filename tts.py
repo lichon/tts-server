@@ -1,6 +1,7 @@
+import subprocess
 import time
 import pyperclip
-import pyttsx3
+import pyttsx4
 import os
 
 def main():
@@ -14,13 +15,19 @@ def main():
         time.sleep(0.5)
 
 def mpv_play(f):
-    os.system("mpv --no-terminal --volume=150 --audio-device=wasapi/{a8b47dd6-3226-48db-9b72-862860a13f42} " + f)
+    subprocess.run([
+        "mpv",
+        # "--audio-device=wasapi/{a8b47dd6-3226-48db-9b72-862860a13f42}", 
+        "--no-terminal",
+        "--force-window=no",
+        "--volume=150", f
+    ])
 
 class LocalTTSService:
     _file_idx = 1
 
     def __init__(self):
-        self.engine = pyttsx3.init()
+        self.engine = pyttsx4.init('coqui_ai_tts')
         self.voices = self.engine.getProperty('voices')
         for v in self.voices:
             print("v", v)
@@ -38,7 +45,7 @@ class LocalTTSService:
         if not text:
             raise ValueError("Text cannot be empty")
         LocalTTSService._file_idx += 1
-        filename = 'tmp_' + str(LocalTTSService._file_idx) + '.mp3'
+        filename = 'tmp_' + str(LocalTTSService._file_idx) + '.wav'
         self.engine.save_to_file(text, filename)
         self.engine.runAndWait()
         mpv_play(filename)
